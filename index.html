@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="data/cityBoundary_1.js"></script>
+        <script src="data/LandParcels_2.js"></script>
+        <script src="data/Buildings_3.js"></script>
+        <script src="data/WaterPressurizedMain_4.js"></script>
+        <script src="data/waterLateralLine_5.js"></script>
+        <script src="data/WaterMeter_6.js"></script>
+        <script src="data/WaterNetworkStructure_7.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+
+            if (e.target.feature.geometry.type === 'LineString' || e.target.feature.geometry.type === 'MultiLineString') {
+              highlightLayer.setStyle({
+                color: '#ffff00',
+              });
+            } else {
+              highlightLayer.setStyle({
+                fillColor: '#ffff00',
+                fillOpacity: 1
+              });
+            }
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[-34.13942810353773,18.391712978303925],[-34.12467458903362,18.40731674879991]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        document.querySelector(".leaflet-popup-pane").addEventListener("load", function(event) {
+          var tagName = event.target.tagName,
+            popup = map._popup;
+          // Also check if flag is already set.
+          if (tagName === "IMG" && popup && !popup._updated) {
+            popup._updated = true; // Set flag to prevent looping.
+            popup.update();
+          }
+        }, true);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_OpenStreetMap_0');
+        map.getPane('pane_OpenStreetMap_0').style.zIndex = 400;
+        var layer_OpenStreetMap_0 = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OpenStreetMap_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OpenStreetMap_0;
+        map.addLayer(layer_OpenStreetMap_0);
+        function pop_cityBoundary_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Boundary Length</th>\
+                        <td class="visible-with-data" id="Boundary Length">' + (feature.properties['Boundary Length'] !== null ? autolinker.link(feature.properties['Boundary Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Boundary Area</th>\
+                        <td class="visible-with-data" id="Boundary Area">' + (feature.properties['Boundary Area'] !== null ? autolinker.link(feature.properties['Boundary Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_cityBoundary_1_0() {
+            return {
+                pane: 'pane_cityBoundary_1',
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_cityBoundary_1');
+        map.getPane('pane_cityBoundary_1').style.zIndex = 401;
+        map.getPane('pane_cityBoundary_1').style['mix-blend-mode'] = 'normal';
+        var layer_cityBoundary_1 = new L.geoJson(json_cityBoundary_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_cityBoundary_1',
+            layerName: 'layer_cityBoundary_1',
+            pane: 'pane_cityBoundary_1',
+            onEachFeature: pop_cityBoundary_1,
+            style: style_cityBoundary_1_0,
+        });
+        bounds_group.addLayer(layer_cityBoundary_1);
+        map.addLayer(layer_cityBoundary_1);
+        function pop_LandParcels_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Address Number</th>\
+                        <td class="visible-with-data" id="Address Number">' + (feature.properties['Address Number'] !== null ? autolinker.link(feature.properties['Address Number'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Street Name</th>\
+                        <td class="visible-with-data" id="Street Name">' + (feature.properties['Street Name'] !== null ? autolinker.link(feature.properties['Street Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Length</th>\
+                        <td class="visible-with-data" id="Shape Length">' + (feature.properties['Shape Length'] !== null ? autolinker.link(feature.properties['Shape Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Area</th>\
+                        <td class="visible-with-data" id="Shape Area">' + (feature.properties['Shape Area'] !== null ? autolinker.link(feature.properties['Shape Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_LandParcels_2_0() {
+            return {
+                pane: 'pane_LandParcels_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(181,223,138,0.5803921568627451)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_LandParcels_2');
+        map.getPane('pane_LandParcels_2').style.zIndex = 402;
+        map.getPane('pane_LandParcels_2').style['mix-blend-mode'] = 'normal';
+        var layer_LandParcels_2 = new L.geoJson(json_LandParcels_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_LandParcels_2',
+            layerName: 'layer_LandParcels_2',
+            pane: 'pane_LandParcels_2',
+            onEachFeature: pop_LandParcels_2,
+            style: style_LandParcels_2_0,
+        });
+        bounds_group.addLayer(layer_LandParcels_2);
+        map.addLayer(layer_LandParcels_2);
+        function pop_Buildings_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Property Name</th>\
+                        <td class="visible-with-data" id="Property Name">' + (feature.properties['Property Name'] !== null ? autolinker.link(feature.properties['Property Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Building Number</th>\
+                        <td class="visible-with-data" id="Building Number">' + (feature.properties['Building Number'] !== null ? autolinker.link(feature.properties['Building Number'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Length</th>\
+                        <td class="visible-with-data" id="Shape Length">' + (feature.properties['Shape Length'] !== null ? autolinker.link(feature.properties['Shape Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Area</th>\
+                        <td class="visible-with-data" id="Shape Area">' + (feature.properties['Shape Area'] !== null ? autolinker.link(feature.properties['Shape Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_Buildings_3_0() {
+            return {
+                pane: 'pane_Buildings_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(153,112,90,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Buildings_3');
+        map.getPane('pane_Buildings_3').style.zIndex = 403;
+        map.getPane('pane_Buildings_3').style['mix-blend-mode'] = 'normal';
+        var layer_Buildings_3 = new L.geoJson(json_Buildings_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Buildings_3',
+            layerName: 'layer_Buildings_3',
+            pane: 'pane_Buildings_3',
+            onEachFeature: pop_Buildings_3,
+            style: style_Buildings_3_0,
+        });
+        bounds_group.addLayer(layer_Buildings_3);
+        map.addLayer(layer_Buildings_3);
+        function pop_WaterPressurizedMain_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">OperationA</th>\
+                        <td class="visible-with-data" id="OperationA">' + (feature.properties['OperationA'] !== null ? autolinker.link(feature.properties['OperationA'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Material</th>\
+                        <td class="visible-with-data" id="Material">' + (feature.properties['Material'] !== null ? autolinker.link(feature.properties['Material'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Pipeclass</th>\
+                        <td class="visible-with-data" id="Pipeclass">' + (feature.properties['Pipeclass'] !== null ? autolinker.link(feature.properties['Pipeclass'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diameter</th>\
+                        <td class="visible-with-data" id="Diameter">' + (feature.properties['Diameter'] !== null ? autolinker.link(feature.properties['Diameter'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Length</th>\
+                        <td class="visible-with-data" id="Shape Length">' + (feature.properties['Shape Length'] !== null ? autolinker.link(feature.properties['Shape Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_WaterPressurizedMain_4_0() {
+            return {
+                pane: 'pane_WaterPressurizedMain_4',
+                opacity: 1,
+                color: 'rgba(0,232,46,0.8745098039215686)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_WaterPressurizedMain_4');
+        map.getPane('pane_WaterPressurizedMain_4').style.zIndex = 404;
+        map.getPane('pane_WaterPressurizedMain_4').style['mix-blend-mode'] = 'normal';
+        var layer_WaterPressurizedMain_4 = new L.geoJson(json_WaterPressurizedMain_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_WaterPressurizedMain_4',
+            layerName: 'layer_WaterPressurizedMain_4',
+            pane: 'pane_WaterPressurizedMain_4',
+            onEachFeature: pop_WaterPressurizedMain_4,
+            style: style_WaterPressurizedMain_4_0,
+        });
+        bounds_group.addLayer(layer_WaterPressurizedMain_4);
+        map.addLayer(layer_WaterPressurizedMain_4);
+        function pop_waterLateralLine_5(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Install Date</th>\
+                        <td class="visible-with-data" id="Install Date">' + (feature.properties['Install Date'] !== null ? autolinker.link(feature.properties['Install Date'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Operation Area</th>\
+                        <td class="visible-with-data" id="Operation Area">' + (feature.properties['Operation Area'] !== null ? autolinker.link(feature.properties['Operation Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Diameter</th>\
+                        <td class="visible-with-data" id="Diameter">' + (feature.properties['Diameter'] !== null ? autolinker.link(feature.properties['Diameter'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Shape Length</th>\
+                        <td class="visible-with-data" id="Shape Length">' + (feature.properties['Shape Length'] !== null ? autolinker.link(feature.properties['Shape Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_waterLateralLine_5_0() {
+            return {
+                pane: 'pane_waterLateralLine_5',
+                opacity: 1,
+                color: 'rgba(141,90,153,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_waterLateralLine_5');
+        map.getPane('pane_waterLateralLine_5').style.zIndex = 405;
+        map.getPane('pane_waterLateralLine_5').style['mix-blend-mode'] = 'normal';
+        var layer_waterLateralLine_5 = new L.geoJson(json_waterLateralLine_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_waterLateralLine_5',
+            layerName: 'layer_waterLateralLine_5',
+            pane: 'pane_waterLateralLine_5',
+            onEachFeature: pop_waterLateralLine_5,
+            style: style_waterLateralLine_5_0,
+        });
+        bounds_group.addLayer(layer_waterLateralLine_5);
+        map.addLayer(layer_waterLateralLine_5);
+        function pop_WaterMeter_6(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Meter Number</th>\
+                        <td class="visible-with-data" id="Meter Number">' + (feature.properties['Meter Number'] !== null ? autolinker.link(feature.properties['Meter Number'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Meter Name</th>\
+                        <td class="visible-with-data" id="Meter Name">' + (feature.properties['Meter Name'] !== null ? autolinker.link(feature.properties['Meter Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">wnetwor_15</th>\
+                        <td class="visible-with-data" id="wnetwor_15">' + (feature.properties['wnetwor_15'] !== null ? autolinker.link(feature.properties['wnetwor_15'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Water Level</th>\
+                        <td class="visible-with-data" id="Water Level">' + (feature.properties['Water Level'] !== null ? autolinker.link(feature.properties['Water Level'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Volume</th>\
+                        <td class="visible-with-data" id="Volume">' + (feature.properties['Volume'] !== null ? autolinker.link(feature.properties['Volume'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_WaterMeter_6_0() {
+            return {
+                pane: 'pane_WaterMeter_6',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,127,0,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_WaterMeter_6');
+        map.getPane('pane_WaterMeter_6').style.zIndex = 406;
+        map.getPane('pane_WaterMeter_6').style['mix-blend-mode'] = 'normal';
+        var layer_WaterMeter_6 = new L.geoJson(json_WaterMeter_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_WaterMeter_6',
+            layerName: 'layer_WaterMeter_6',
+            pane: 'pane_WaterMeter_6',
+            onEachFeature: pop_WaterMeter_6,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_WaterMeter_6_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_WaterMeter_6);
+        map.addLayer(layer_WaterMeter_6);
+        function pop_WaterNetworkStructure_7(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    for (var i in e.target._eventParents) {
+                        if (typeof e.target._eventParents[i].resetStyle === 'function') {
+                            e.target._eventParents[i].resetStyle(e.target);
+                        }
+                    }
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">OperationA</th>\
+                        <td class="visible-with-data" id="OperationA">' + (feature.properties['OperationA'] !== null ? autolinker.link(feature.properties['OperationA'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td class="visible-with-data" id="Name">' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">source</th>\
+                        <td class="visible-with-data" id="source">' + (feature.properties['source'] !== null ? autolinker.link(feature.properties['source'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td class="visible-with-data" id="Type">' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Water Temperature</th>\
+                        <td class="visible-with-data" id="Water Temperature">' + (feature.properties['Water Temperature'] !== null ? autolinker.link(feature.properties['Water Temperature'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+            var popup = layer.getPopup();
+            var content = popup.getContent();
+            var updatedContent = removeEmptyRowsFromPopupContent(content, feature);
+            popup.setContent(updatedContent);
+        }
+
+        function style_WaterNetworkStructure_7_0() {
+            return {
+                pane: 'pane_WaterNetworkStructure_7',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,72,88,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_WaterNetworkStructure_7');
+        map.getPane('pane_WaterNetworkStructure_7').style.zIndex = 407;
+        map.getPane('pane_WaterNetworkStructure_7').style['mix-blend-mode'] = 'normal';
+        var layer_WaterNetworkStructure_7 = new L.geoJson(json_WaterNetworkStructure_7, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_WaterNetworkStructure_7',
+            layerName: 'layer_WaterNetworkStructure_7',
+            pane: 'pane_WaterNetworkStructure_7',
+            onEachFeature: pop_WaterNetworkStructure_7,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_WaterNetworkStructure_7_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_WaterNetworkStructure_7);
+        map.addLayer(layer_WaterNetworkStructure_7);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var baseMaps = {};
+        var overlaysTree = [
+            {label: '<img src="legend/WaterNetworkStructure_7.png" /> Water Network Structure', layer: layer_WaterNetworkStructure_7},
+            {label: '<img src="legend/WaterMeter_6.png" /> Water Meter', layer: layer_WaterMeter_6},
+            {label: '<img src="legend/waterLateralLine_5.png" /> water Lateral Line', layer: layer_waterLateralLine_5},
+            {label: '<img src="legend/WaterPressurizedMain_4.png" /> Water Pressurized Main', layer: layer_WaterPressurizedMain_4},
+            {label: '<img src="legend/Buildings_3.png" /> Buildings', layer: layer_Buildings_3},
+            {label: '<img src="legend/LandParcels_2.png" /> Land Parcels', layer: layer_LandParcels_2},
+            {label: '<img src="legend/cityBoundary_1.png" /> city Boundary', layer: layer_cityBoundary_1},
+            {label: "Open Street Map", layer: layer_OpenStreetMap_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+        setBounds();
+        </script>
+    </body>
+</html>
